@@ -289,7 +289,7 @@ public class CLI {
     // specify language (for language dependent treatment of apostrophes)
     annotateParser
         .addArgument("-l", "--lang")
-        .choices("de", "en", "es", "eu", "fr", "gl", "it", "nl")
+        .choices("de", "en", "es", "eu", "fr", "gl", "it", "nl", "pl")
         .required(true)
         .help(
             "It is REQUIRED to choose a language to perform annotation with ixa-pipe-tok.\n");
@@ -352,7 +352,7 @@ public class CLI {
     // specify language (for language dependent treatment of apostrophes)
     serverParser
         .addArgument("-l", "--lang")
-        .choices("de", "en", "es", "eu", "fr", "gl", "it", "nl")
+        .choices("de", "en", "es", "eu", "fr", "gl", "it", "nl", "pl")
         .required(true)
         .help(
             "It is REQUIRED to choose a language to perform annotation with ixa-pipe-tok.\n");

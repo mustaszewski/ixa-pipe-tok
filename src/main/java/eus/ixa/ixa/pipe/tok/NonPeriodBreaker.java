@@ -153,7 +153,10 @@ public class NonPeriodBreaker {
     } else if (lang.equalsIgnoreCase("nl")) {
       nonBreakerInputStream = getClass().getResourceAsStream(
           "/nl-nonbreaker.txt");
-    }
+    } else if (lang.equalsIgnoreCase("pl")) {
+        nonBreakerInputStream = getClass().getResourceAsStream(
+                "/pl-nonbreaker.txt");
+          }
     return nonBreakerInputStream;
   }
 
