@@ -82,6 +82,9 @@ public class NonPeriodBreaker {
    * Non breaker prefix read from the files in resources.
    */
   private String NON_BREAKER = null;
+  
+  private static Pattern hasInitPct = Pattern.compile("[<(]");
+ // Pattern.compile("[\u00AB\u0093\u201C]");
 
   /**
    * 
@@ -155,7 +158,7 @@ public class NonPeriodBreaker {
           "/nl-nonbreaker.txt");
     } else if (lang.equalsIgnoreCase("pl")) {
         nonBreakerInputStream = getClass().getResourceAsStream(
-                "/pl-nonbreaker.txt");
+          "/pl-nonbreaker.txt");
           }
     return nonBreakerInputStream;
   }
@@ -185,8 +188,17 @@ public class NonPeriodBreaker {
       if (nonSegmentedWordMatcher.find()) {
         String curWord = nonSegmentedWordMatcher.replaceAll("$1");
         String finalPunct = nonSegmentedWordMatcher.replaceAll("$2");
+        
+
+
+        // Temporary bugfix only. TO DO: Find cause of problem (segmentation after nonbreaker if preceded by punctuation mark, e.g. opening parenthesis)
+    	if (hasInitPct.matcher(curWord.substring(0, 1)).find()) {
+    		curWord  = curWord.substring(1);
+    	}
+    	
+
         if (!curWord.isEmpty() && curWord.matches("(" + NON_BREAKER + ")")
-            && finalPunct.isEmpty()) {
+            && (finalPunct.isEmpty() || hasInitPct.matcher(finalPunct).find())) {
           // if current word is not empty and is a no breaker and there is not
           // final punctuation
         } else if (acronym.matcher(words[i]).find()) {
