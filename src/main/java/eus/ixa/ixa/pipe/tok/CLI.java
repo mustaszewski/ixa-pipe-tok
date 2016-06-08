@@ -16,10 +16,9 @@
 
 package eus.ixa.ixa.pipe.tok;
 
-import ixa.kaflib.KAFDocument;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,8 +28,13 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
+import org.jdom2.JDOMException;
+
+import ixa.kaflib.KAFDocument;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -38,8 +42,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
-
-import org.jdom2.JDOMException;
 
 /**
  * ixa-pipe-tok provides several configuration parameters:
@@ -92,6 +94,10 @@ public class CLI {
    */
   private final Subparser annotateParser;
   /**
+   * The parser that manages the evaluation sub-command.
+   */
+  private final Subparser evalParser;
+  /**
    * Parser to start TCP socket for server-client functionality.
    */
   private Subparser serverParser;
@@ -103,6 +109,8 @@ public class CLI {
   public CLI() {
     annotateParser = subParsers.addParser("tok").help("Tagging CLI");
     loadAnnotateParameters();
+    evalParser = subParsers.addParser("eval").help("Evaluation tokenisation output against reference file in oneline format");
+    loadEvalParameters();
     serverParser = subParsers.addParser("server").help("Start TCP socket server");
     loadServerParameters();
     clientParser = subParsers.addParser("client").help("Send queries to the TCP socket server");
@@ -133,7 +141,10 @@ public class CLI {
       System.err.println("CLI options: " + parsedArguments);
       if (args[0].equals("tok")) {
         annotate(System.in, System.out);
-      } else if (args[0].equals("server")) {
+      }  else if (args[0].equals("eval")) {
+    	  eval(System.in, System.out);
+      } 
+      else if (args[0].equals("server")) {
         server();
       } else if (args[0].equals("client")) {
         client(System.in, System.out);
@@ -141,7 +152,7 @@ public class CLI {
     } catch (final ArgumentParserException e) {
       argParser.handleError(e);
       System.out.println("Run java -jar target/ixa-pipe-tok-" + version
-          + ".jar (tok|server|client) -help for details");
+          + ".jar (tok|eval|server|client) -help for details");
       System.exit(1);
     }
   }
@@ -209,6 +220,37 @@ public class CLI {
     }
     bwriter.close();
   }
+  
+  
+  public final void eval(final InputStream inputStream,
+	      final OutputStream outputStream) throws IOException, JDOMException {
+	    final String normalize = parsedArguments.getString("normalize");
+	    final String lang = parsedArguments.getString("lang");
+	    final String untokenizable = parsedArguments.getString("untokenizable");
+	    final String hardParagraph = parsedArguments.getString("hardParagraph");
+	    final String references = parsedArguments.getString("reference");
+	    final Properties properties = setEvalProperties(lang, normalize, untokenizable, hardParagraph, references);
+	    
+	    
+	    // Create Input Buffer for test file
+	    BufferedReader breader = null;
+	    breader = new BufferedReader(new InputStreamReader(System.in, "UTF-8"));
+	    
+	    // Annotate, i.e. tokenise, test file
+	    final Annotate annotator = new Annotate(breader, properties);
+	    List<Token> testTokens = annotator.tokenizeToTokenList();
+	    
+	    // Debug only
+	    //System.out.println("\n### testTokens: " +testTokens.toString() + " | size: " + testTokens.size() + " ###\n");
+	    
+	    List<Token> referenceTokens = null;
+	    referenceTokens = getReferenceTokens(references);
+	    TokenizerEvaluator evaluator = new TokenizerEvaluator();
+	    evaluator.evaluate(referenceTokens, testTokens);
+	    
+	    System.out.println("Final F-Score: " + evaluator.getFMeasure());
+  }
+	  
   
   /**
    * Set up the TCP socket for annotation.
@@ -341,6 +383,43 @@ public class CLI {
         .help("Set kaf document version.\n");
   }
   
+  private void loadEvalParameters() {
+	    // specify language (for language dependent treatment of apostrophes)
+	    evalParser
+	        .addArgument("-l", "--lang")
+	        .choices("de", "en", "es", "eu", "fr", "gl", "it", "nl", "pl")
+	        .required(true)
+	        .help(
+	            "It is REQUIRED to choose a language to perform annotation with ixa-pipe-tok.\n");
+	    evalParser
+        	.addArgument("-r", "--reference")
+        	.required(true)
+        	.help(
+        		"It is REQUIRED to provide a reference tokenisation file in oneline format, with respect to which the output will be evaluated.\n");
+	    evalParser
+	        .addArgument("-n", "--normalize")
+	        .choices("alpino", "ancora", "ctag", "default", "ptb", "tiger",
+	            "tutpenn")
+	        .required(false)
+	        .setDefault("default")
+	        .help(
+	            "Set normalization method according to corpus; the default option does not escape "
+	                + "brackets or forward slashes. See README for more details.\n");
+	    evalParser
+	        .addArgument("-u","--untokenizable")
+	        .choices("yes", "no")
+	        .setDefault("no")
+	        .required(false)
+	        .help("Print untokenizable characters.\n");
+	    evalParser
+	        .addArgument("--hardParagraph")
+	        .choices("yes", "no")
+	        .setDefault("no")
+	        .required(false)
+	        .help("Do not segment paragraphs. Ever.\n");
+	  }
+  
+  
   /**
    * Create the available parameters for NER tagging.
    */
@@ -423,6 +502,16 @@ public class CLI {
     annotateProperties.setProperty("hardParagraph", hardParagraph);
     return annotateProperties;
   }
+  
+  private Properties setEvalProperties(final String lang, final String normalize, final String untokenizable, final String hardParagraph, final String reference) {
+	    final Properties evalProperties = new Properties();
+	    evalProperties.setProperty("language", lang);
+	    evalProperties.setProperty("normalize", normalize);
+	    evalProperties.setProperty("reference", reference);
+	    evalProperties.setProperty("untokenizable", untokenizable);
+	    evalProperties.setProperty("hardParagraph", hardParagraph);
+	    return evalProperties;
+	  }
     
     private Properties setServerProperties(final String port, final String lang, final String normalize, final String untokenizable, final String kafversion, final String inputkaf, final String notok, final String outputFormat, final String offsets, final String hardParagraph) {
       final Properties serverProperties = new Properties();
@@ -438,5 +527,22 @@ public class CLI {
       serverProperties.setProperty("hardParagraph", hardParagraph);
       return serverProperties;
   }
+     /**
+      * Get list of reference tokens by loading it from the file specified in the CLI parameter --reference
+      */
+    public List<Token> getReferenceTokens (String in) throws IOException { //List<Token>
+       List<Token> referenceTokenList= new ArrayList<Token>();
+  	   InputStream referenceInputStream = new FileInputStream(in);
+  	   BufferedReader br = new BufferedReader(new InputStreamReader(referenceInputStream, "UTF-8"));
+  	   String line;
+  	   while ((line = br.readLine()) != null) {
+  		  String[] lineArray = line.split(" ");
+  		  for (String tok : lineArray) {
+  			  referenceTokenList.add(new Token(tok));
+  		  }
+  	    }
+  	   br.close();
+  	   return referenceTokenList;
+  	  }
 
 }

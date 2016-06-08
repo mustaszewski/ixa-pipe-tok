@@ -22,6 +22,7 @@ import ixa.kaflib.WF;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -173,6 +174,26 @@ public class Annotate {
     }
     return sb.toString().trim();
   }
+  
+  /**
+   * Stores each token of the tokenised text in a list. Use for evaluation only.
+   * @return
+   */
+  public List<Token> tokenizeToTokenList() {
+	    final String[] sentences = segmenter.segmentSentence();
+	    final List<List<Token>> tokens = toker.tokenize(sentences);
+	    final List<Token> tokenList = new ArrayList<Token>();
+	    for (final List<Token> tokSentence : tokens) {
+	        for (final Token token : tokSentence) {
+	          String tokenValue = token.getTokenValue();
+	          if (tokenValue.equals(RuleBasedSegmenter.PARAGRAPH)) {
+	            token.setTokenValue("*<P>*");
+	          }
+	          tokenList.add(token);
+	        }
+	    }
+	    return tokenList;
+	  }
 
   public static void tokensToKAF(final Reader breader, final KAFDocument kaf)
       throws IOException {
