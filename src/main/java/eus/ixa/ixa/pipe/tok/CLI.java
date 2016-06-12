@@ -229,7 +229,8 @@ public class CLI {
 	    final String untokenizable = parsedArguments.getString("untokenizable");
 	    final String hardParagraph = parsedArguments.getString("hardParagraph");
 	    final String references = parsedArguments.getString("reference");
-	    final Properties properties = setEvalProperties(lang, normalize, untokenizable, hardParagraph, references);
+	    final String inputFormat = parsedArguments.getString("inputFormat");
+	    final Properties properties = setEvalProperties(lang, normalize, untokenizable, inputFormat, hardParagraph, references);
 	    
 	    
 	    // Create Input Buffer for test file
@@ -240,11 +241,13 @@ public class CLI {
 	    final Annotate annotator = new Annotate(breader, properties);
 	    List<Token> testTokens = annotator.tokenizeToTokenList();
 	    
-	    // Debug only
-	    //System.out.println("\n### testTokens: " +testTokens.toString() + " | size: " + testTokens.size() + " ###\n");
-	    
 	    List<Token> referenceTokens = null;
-	    referenceTokens = getReferenceTokens(references);
+	    if (inputFormat.equals("tokenline")) {
+	    	referenceTokens = getReferenceTokensTokenLine(references);
+	    } else {
+	    	referenceTokens = getReferenceTokensSentenceLine(references);
+	    }
+	    
 	    TokenizerEvaluator evaluator = new TokenizerEvaluator();
 	    evaluator.evaluate(referenceTokens, testTokens);
 	    
@@ -397,6 +400,13 @@ public class CLI {
         	.help(
         		"It is REQUIRED to provide a reference tokenisation file in oneline format, with respect to which the output will be evaluated.\n");
 	    evalParser
+        	.addArgument("-i", "--inputFormat")
+        	.choices("sentenceline", "tokenline")
+        	.setDefault("tokenline")
+        	.required(true)
+        	.help(
+            "Choose input data format; it defaults to tokenline (1 token per line).\n");
+	    evalParser
 	        .addArgument("-n", "--normalize")
 	        .choices("alpino", "ancora", "ctag", "default", "ptb", "tiger",
 	            "tutpenn")
@@ -503,12 +513,13 @@ public class CLI {
     return annotateProperties;
   }
   
-  private Properties setEvalProperties(final String lang, final String normalize, final String untokenizable, final String hardParagraph, final String reference) {
+  private Properties setEvalProperties(final String lang, final String normalize, final String untokenizable, final String inputFormat, final String hardParagraph, final String reference) {
 	    final Properties evalProperties = new Properties();
 	    evalProperties.setProperty("language", lang);
 	    evalProperties.setProperty("normalize", normalize);
 	    evalProperties.setProperty("reference", reference);
 	    evalProperties.setProperty("untokenizable", untokenizable);
+	    evalProperties.setProperty("inputFormat", inputFormat);
 	    evalProperties.setProperty("hardParagraph", hardParagraph);
 	    return evalProperties;
 	  }
@@ -530,7 +541,7 @@ public class CLI {
      /**
       * Get list of reference tokens by loading it from the file specified in the CLI parameter --reference
       */
-    public List<Token> getReferenceTokens (String in) throws IOException { //List<Token>
+    public List<Token> getReferenceTokensSentenceLine (String in) throws IOException { //List<Token>
        List<Token> referenceTokenList= new ArrayList<Token>();
   	   InputStream referenceInputStream = new FileInputStream(in);
   	   BufferedReader br = new BufferedReader(new InputStreamReader(referenceInputStream, "UTF-8"));
@@ -544,5 +555,37 @@ public class CLI {
   	   br.close();
   	   return referenceTokenList;
   	  }
+    
+    /**
+     * Get list of reference tokens by loading it from the file specified in the CLI parameter --reference
+     */
+   public List<Token> getReferenceTokensTokenLine (String in) throws IOException { //List<Token>
+      List<Token> referenceTokenList= new ArrayList<Token>();
+ 	   InputStream referenceInputStream = new FileInputStream(in);
+ 	   BufferedReader br = new BufferedReader(new InputStreamReader(referenceInputStream, "UTF-8"));
+ 	   String line;
+ 	   while ((line = br.readLine()) != null) {
+ 		  line = line.trim();
+ 		  if (line.length() > 0) {
+ 			  referenceTokenList.add(new Token(line));
+ 		  }
+ 		}
+ 	   br.close();
+ 	   return referenceTokenList;
+ 	  }
 
+   /*
+   String line;
+   try {
+     while ((line = breader.readLine()) != null) {
+       line = line.trim();
+       if (!line.startsWith("#")) {
+         nonBreakerList.add(line);
+       }
+     }
+   } catch (final IOException e) {
+     e.printStackTrace();
+   }
+   */
+   
 }

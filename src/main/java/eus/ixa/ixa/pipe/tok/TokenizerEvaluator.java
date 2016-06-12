@@ -33,7 +33,7 @@ import com.google.common.io.Files;
 public class TokenizerEvaluator {
 
   private final FMeasure fmeasure = new FMeasure();
-  public static final boolean DEBUG = true;
+  public static final boolean DEBUG = false;
 
   private List<List<String>> referenceTokens(final List<Token> referenceList) {
 

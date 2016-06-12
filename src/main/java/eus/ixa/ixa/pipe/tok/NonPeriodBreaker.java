@@ -190,11 +190,13 @@ public class NonPeriodBreaker {
         String finalPunct = nonSegmentedWordMatcher.replaceAll("$2");
         
 
-
         // Temporary bugfix only. TO DO: Find cause of problem (segmentation after nonbreaker if preceded by punctuation mark, e.g. opening parenthesis)
-    	if (hasInitPct.matcher(curWord.substring(0, 1)).find()) {
+    	if (curWord.length() > 1) {
+    		if (hasInitPct.matcher(curWord.substring(0, 1)).find()) {
     		curWord  = curWord.substring(1);
+    		}
     	}
+
     	
 
         if (!curWord.isEmpty() && curWord.matches("(" + NON_BREAKER + ")")
