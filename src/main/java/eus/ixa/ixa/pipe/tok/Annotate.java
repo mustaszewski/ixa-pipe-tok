@@ -111,7 +111,7 @@ public class Annotate {
       for (final Token token : tokSentence) {
         String tokenValue = token.getTokenValue();
         if (tokenValue.equals(RuleBasedSegmenter.PARAGRAPH)) {
-          tokenValue = "*<X>*"; // tokenValue = "*<P>*";
+          tokenValue = "*<P>*"; // tokenValue = "*<P>*";
         }
         sb.append(tokenValue.trim()).append("\n");
       }
@@ -136,7 +136,7 @@ public class Annotate {
       for (final Token token : tokSentence) {
         String tokenValue = token.getTokenValue();
         if (tokenValue.equals(RuleBasedSegmenter.PARAGRAPH)) {
-          tokenValue = "*<Y>*"; // *<P>*
+          tokenValue = "*<P>*"; // *<P>*
         }
         sb.append(tokenValue.trim()).append(" ")
             .append(token.startOffset()).append(" ")
@@ -187,7 +187,7 @@ public class Annotate {
 	        for (final Token token : tokSentence) {
 	          String tokenValue = token.getTokenValue();
 	          if (tokenValue.equals(RuleBasedSegmenter.PARAGRAPH)) {
-	            token.setTokenValue("*<W>*"); //*<P>*
+	            token.setTokenValue("*<P>*"); //*<P>*
 	          }
 	          tokenList.add(token);
 	        }
