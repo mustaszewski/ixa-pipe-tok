@@ -55,7 +55,7 @@ import net.sourceforge.argparse4j.inf.Subparsers;
  * it.
  * <li>inputkaf: take a NAF Document as input instead of plain text file.
  * <li>kafversion: specify the NAF version as parameter.
- * <li>hardParagraph: never break paragraphs.
+ * <li>segmentOnLinebreak: segment on each linebreak, even if there is no final punctuation mark.
  * <li>eval: input reference corpus to evaluate a tokenizer.
  * </ol>
  * 
@@ -166,8 +166,8 @@ public class CLI {
     final String kafVersion = parsedArguments.getString("kafversion");
     final Boolean inputKafRaw = parsedArguments.getBoolean("inputkaf");
     final Boolean noTok = parsedArguments.getBoolean("notok");
-    final String hardParagraph = parsedArguments.getString("hardParagraph");
-    final Properties properties = setAnnotateProperties(lang, normalize, untokenizable, hardParagraph);
+    final String segmentOnLinebreak = parsedArguments.getString("segmentOnLinebreak");
+    final Properties properties = setAnnotateProperties(lang, normalize, untokenizable, segmentOnLinebreak);
 
     BufferedReader breader = null;
     final BufferedWriter bwriter = new BufferedWriter(new OutputStreamWriter(
@@ -227,10 +227,10 @@ public class CLI {
 	    final String normalize = parsedArguments.getString("normalize");
 	    final String lang = parsedArguments.getString("lang");
 	    final String untokenizable = parsedArguments.getString("untokenizable");
-	    final String hardParagraph = parsedArguments.getString("hardParagraph");
+	    final String segmentOnLinebreak = parsedArguments.getString("segmentOnLinebreak");
 	    final String references = parsedArguments.getString("reference");
 	    final String inputFormat = parsedArguments.getString("inputFormat");
-	    final Properties properties = setEvalProperties(lang, normalize, untokenizable, inputFormat, hardParagraph, references);
+	    final Properties properties = setEvalProperties(lang, normalize, untokenizable, inputFormat, segmentOnLinebreak, references);
 	    
 	    
 	    // Create Input Buffer for test file
@@ -268,10 +268,10 @@ public class CLI {
     final String kafversion = parsedArguments.getString("kafversion");
     final String inputkaf = String.valueOf(parsedArguments.getBoolean("inputkaf"));
     final String notok = String.valueOf(parsedArguments.getBoolean("notok"));
-    final String hardParagraph = parsedArguments.getString("hardParagraph");
+    final String segmentOnLinebreak = parsedArguments.getString("segmentOnLinebreak");
     final String offsets = String.valueOf(parsedArguments.getBoolean("offsets"));
     final String outputFormat = parsedArguments.getString("outputFormat");
-    Properties serverProperties = setServerProperties(port, lang, normalize, untokenizable, kafversion, inputkaf, notok, outputFormat, offsets, hardParagraph);
+    Properties serverProperties = setServerProperties(port, lang, normalize, untokenizable, kafversion, inputkaf, notok, outputFormat, offsets, segmentOnLinebreak);
     new RuleBasedTokenizerServer(serverProperties);
   }
   
@@ -376,8 +376,8 @@ public class CLI {
         .help(
             "Build a KAF document from an already tokenized sentence per line file.\n");
     annotateParser
-        .addArgument("--hardParagraph")
-        .choices("yes", "no")
+        .addArgument("--segmentOnLinebreak")
+        .choices("no", "single", "double")
         .setDefault("no")
         .required(false)
         .help("Do not segment paragraphs. Ever.\n");
@@ -422,8 +422,8 @@ public class CLI {
 	        .required(false)
 	        .help("Print untokenizable characters.\n");
 	    evalParser
-	        .addArgument("--hardParagraph")
-	        .choices("yes", "no")
+	        .addArgument("--segmentOnLinebreak")
+	        .choices("no", "single", "double")
 	        .setDefault("no")
 	        .required(false)
 	        .help("Do not segment paragraphs. Ever.\n");
@@ -483,8 +483,8 @@ public class CLI {
         .help(
             "Build a KAF document from an already tokenized sentence per line file.\n");
     serverParser
-        .addArgument("--hardParagraph")
-        .choices("yes", "no")
+        .addArgument("--segmentOnLinebreak")
+        .choices("no", "single", "double")
         .setDefault("no")
         .required(false)
         .help("Do not segment paragraphs. Ever.\n");
@@ -504,27 +504,27 @@ public class CLI {
         .help("Hostname or IP where the TCP server is running.\n");
   }
 
-  private Properties setAnnotateProperties(final String lang, final String normalize, final String untokenizable, final String hardParagraph) {
+  private Properties setAnnotateProperties(final String lang, final String normalize, final String untokenizable, final String segmentOnLinebreak) {
     final Properties annotateProperties = new Properties();
     annotateProperties.setProperty("language", lang);
     annotateProperties.setProperty("normalize", normalize);
     annotateProperties.setProperty("untokenizable", untokenizable);
-    annotateProperties.setProperty("hardParagraph", hardParagraph);
+    annotateProperties.setProperty("segmentOnLinebreak", segmentOnLinebreak);
     return annotateProperties;
   }
   
-  private Properties setEvalProperties(final String lang, final String normalize, final String untokenizable, final String inputFormat, final String hardParagraph, final String reference) {
+  private Properties setEvalProperties(final String lang, final String normalize, final String untokenizable, final String inputFormat, final String segmentOnLinebreak, final String reference) {
 	    final Properties evalProperties = new Properties();
 	    evalProperties.setProperty("language", lang);
 	    evalProperties.setProperty("normalize", normalize);
 	    evalProperties.setProperty("reference", reference);
 	    evalProperties.setProperty("untokenizable", untokenizable);
 	    evalProperties.setProperty("inputFormat", inputFormat);
-	    evalProperties.setProperty("hardParagraph", hardParagraph);
+	    evalProperties.setProperty("segmentOnLinebreak", segmentOnLinebreak);
 	    return evalProperties;
 	  }
     
-    private Properties setServerProperties(final String port, final String lang, final String normalize, final String untokenizable, final String kafversion, final String inputkaf, final String notok, final String outputFormat, final String offsets, final String hardParagraph) {
+    private Properties setServerProperties(final String port, final String lang, final String normalize, final String untokenizable, final String kafversion, final String inputkaf, final String notok, final String outputFormat, final String offsets, final String segmentOnLinebreak) {
       final Properties serverProperties = new Properties();
       serverProperties.setProperty("port", port);
       serverProperties.setProperty("language", lang);
@@ -535,7 +535,7 @@ public class CLI {
       serverProperties.setProperty("notok", notok);
       serverProperties.setProperty("outputFormat", outputFormat);
       serverProperties.setProperty("offsets", offsets);
-      serverProperties.setProperty("hardParagraph", hardParagraph);
+      serverProperties.setProperty("segmentOnLinebreak", segmentOnLinebreak);
       return serverProperties;
   }
      /**

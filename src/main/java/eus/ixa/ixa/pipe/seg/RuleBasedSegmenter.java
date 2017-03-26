@@ -47,7 +47,7 @@ public class RuleBasedSegmenter implements SentenceSegmenter {
   /**
    * Two lines.
    */
-  public static Pattern doubleLineBreak = Pattern.compile("(<JAR><JAR>)");
+  public static Pattern doubleLineBreak = Pattern.compile("(<JAR><JAR>)"); 
   /**
    * Paragraph pattern.
    */
@@ -142,7 +142,8 @@ public class RuleBasedSegmenter implements SentenceSegmenter {
    */
   private NonPeriodBreaker nonBreaker;
   private final String text;
-  private boolean isHardParagraph = false;
+  private String doSegmentOnLinebreak;
+  //private final Pattern doubleLineBreak2;
 
   /**
    * Construct a RuleBasedSegmenter from a BufferedReader and the properties.
@@ -154,15 +155,17 @@ public class RuleBasedSegmenter implements SentenceSegmenter {
    */
   public RuleBasedSegmenter(final String originalText,
       final Properties properties) {
-    String hardParagraph = properties.getProperty("hardParagraph");
-    if (hardParagraph.equalsIgnoreCase("yes")) {
-      isHardParagraph = true;
-    }
+    doSegmentOnLinebreak = properties.getProperty("segmentOnLinebreak");
     if (nonBreaker == null) {
       nonBreaker = new NonPeriodBreaker(properties);
     }
+    //if (doSegmentOnLinebreak.equalsIgnoreCase("single")) {
+    //	doubleLineBreak2 = Pattern.compile("(<JAR>)");
+    //} else {
+    //	doubleLineBreak2 = Pattern.compile("(<JAR><JAR>)");
+    //}
     // TODO improve this, when should we load the text?
-    text = buildText(originalText);
+    text = buildText(originalText, doSegmentOnLinebreak);
   }
 
   /*
@@ -191,7 +194,7 @@ public class RuleBasedSegmenter implements SentenceSegmenter {
     String line = builtText.trim();
     line = RuleBasedTokenizer.doubleSpaces.matcher(line).replaceAll(" ");
     
-    if (isHardParagraph) {
+    if (doSegmentOnLinebreak.equalsIgnoreCase("single") || doSegmentOnLinebreak.equalsIgnoreCase("double")) {
       //convert every (spurious) paragraph in newlines and keep them
       line = paragraph.matcher(line).replaceAll("\n$1");
     } else {
@@ -227,13 +230,18 @@ public class RuleBasedSegmenter implements SentenceSegmenter {
     return sentences;
   }
 
-  public static String buildText(String text) {
+  public static String buildText(String text, String segmentOnLinebreak) {
     // <JAR><JAR> to PARAGRAPH mark in unicode
-    text = RuleBasedSegmenter.doubleLineBreak.matcher(text).replaceAll(
+	  //properties.getProperty("segmentOnLinebreak");
+	if (segmentOnLinebreak.equalsIgnoreCase("single")) {
+	  text = RuleBasedSegmenter.lineBreak.matcher(text).replaceAll(PARAGRAPH);	
+	} else {
+      text = RuleBasedSegmenter.doubleLineBreak.matcher(text).replaceAll(
         PARAGRAPH);
+	}
     // <JAR> to " "
     text = RuleBasedSegmenter.lineBreak.matcher(text).replaceAll(" ");
     return text;
   }
-
+//("(<JAR><JAR>)")
 }

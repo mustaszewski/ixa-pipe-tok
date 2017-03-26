@@ -197,7 +197,7 @@ public class RuleBasedTokenizer implements Tokenizer {
     nonBreaker = new NonPeriodBreaker(properties);
     tokenFactory = new TokenFactory();
     // TODO improve this
-    originalText = RuleBasedSegmenter.buildText(text);
+    originalText = RuleBasedSegmenter.buildText(text, properties.getProperty("segmentOnLinebreak"));
   }
 
   /*
