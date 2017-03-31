@@ -138,7 +138,9 @@ public class CLI {
       JDOMException {
     try {
       parsedArguments = argParser.parseArgs(args);
-      System.err.println("CLI options: " + parsedArguments);
+      if (parsedArguments.getString("verbose").equalsIgnoreCase("yes")) {
+    	  System.err.println("CLI options: " + parsedArguments);
+      }
       if (args[0].equals("tok")) {
         annotate(System.in, System.out);
       }  else if (args[0].equals("eval")) {
@@ -167,8 +169,8 @@ public class CLI {
     final Boolean inputKafRaw = parsedArguments.getBoolean("inputkaf");
     final Boolean noTok = parsedArguments.getBoolean("notok");
     final String segmentOnLinebreak = parsedArguments.getString("segmentOnLinebreak");
-    final Properties properties = setAnnotateProperties(lang, normalize, untokenizable, segmentOnLinebreak);
-
+    final String verbose = parsedArguments.getString("verbose");
+    final Properties properties = setAnnotateProperties(lang, normalize, untokenizable, segmentOnLinebreak, verbose);
     BufferedReader breader = null;
     final BufferedWriter bwriter = new BufferedWriter(new OutputStreamWriter(
         System.out, "UTF-8"));
@@ -230,7 +232,8 @@ public class CLI {
 	    final String segmentOnLinebreak = parsedArguments.getString("segmentOnLinebreak");
 	    final String references = parsedArguments.getString("reference");
 	    final String inputFormat = parsedArguments.getString("inputFormat");
-	    final Properties properties = setEvalProperties(lang, normalize, untokenizable, inputFormat, segmentOnLinebreak, references);
+	    final String verbose = parsedArguments.getString("verbose");
+	    final Properties properties = setEvalProperties(lang, normalize, untokenizable, inputFormat, segmentOnLinebreak, references, verbose);
 	    
 	    
 	    // Create Input Buffer for test file
@@ -269,9 +272,10 @@ public class CLI {
     final String inputkaf = String.valueOf(parsedArguments.getBoolean("inputkaf"));
     final String notok = String.valueOf(parsedArguments.getBoolean("notok"));
     final String segmentOnLinebreak = parsedArguments.getString("segmentOnLinebreak");
+    final String verbose = parsedArguments.getString("verbose");
     final String offsets = String.valueOf(parsedArguments.getBoolean("offsets"));
     final String outputFormat = parsedArguments.getString("outputFormat");
-    Properties serverProperties = setServerProperties(port, lang, normalize, untokenizable, kafversion, inputkaf, notok, outputFormat, offsets, segmentOnLinebreak);
+    Properties serverProperties = setServerProperties(port, lang, normalize, untokenizable, kafversion, inputkaf, notok, outputFormat, offsets, segmentOnLinebreak, verbose);
     new RuleBasedTokenizerServer(serverProperties);
   }
   
@@ -380,7 +384,13 @@ public class CLI {
         .choices("no", "single", "double")
         .setDefault("no")
         .required(false)
-        .help("Do not segment paragraphs. Ever.\n");
+        .help("Segment boundary on each linebreak, even if there is no final punctuation mark (e.g. headings)\n");
+    annotateParser
+        .addArgument("-v","--verbose")
+        .choices("yes", "no")
+        .setDefault("yes")
+        .required(false)
+        .help("Surpress verbose progress output.\n");
     annotateParser.addArgument("--kafversion")
          .setDefault("v1.naf")
         .help("Set kaf document version.\n");
@@ -426,7 +436,13 @@ public class CLI {
 	        .choices("no", "single", "double")
 	        .setDefault("no")
 	        .required(false)
-	        .help("Do not segment paragraphs. Ever.\n");
+	        .help("Segment boundary on each linebreak, even if there is no final punctuation mark (e.g. headings)\n");
+	    evalParser
+	    	.addArgument("-v","--verbose")
+	    	.choices("yes", "no")
+	    	.setDefault("yes")
+	    	.required(false)
+	    	.help("Surpress verbose progress output.\n");
 	  }
   
   
@@ -487,7 +503,13 @@ public class CLI {
         .choices("no", "single", "double")
         .setDefault("no")
         .required(false)
-        .help("Do not segment paragraphs. Ever.\n");
+        .help("Segment boundary on each linebreak, even if there is no final punctuation mark (e.g. headings).\n");
+    serverParser
+    	.addArgument("-v","--verbose")
+    	.choices("yes", "no")
+    	.setDefault("yes")
+    	.required(false)
+    	.help("Surpress verbose progress output.\n");
     serverParser.addArgument("--kafversion")
          .setDefault("v1.naf")
         .help("Set kaf document version.\n");
@@ -504,16 +526,17 @@ public class CLI {
         .help("Hostname or IP where the TCP server is running.\n");
   }
 
-  private Properties setAnnotateProperties(final String lang, final String normalize, final String untokenizable, final String segmentOnLinebreak) {
+  private Properties setAnnotateProperties(final String lang, final String normalize, final String untokenizable, final String segmentOnLinebreak, final String verbose) {
     final Properties annotateProperties = new Properties();
     annotateProperties.setProperty("language", lang);
     annotateProperties.setProperty("normalize", normalize);
     annotateProperties.setProperty("untokenizable", untokenizable);
     annotateProperties.setProperty("segmentOnLinebreak", segmentOnLinebreak);
+    annotateProperties.setProperty("verbose", verbose);
     return annotateProperties;
   }
   
-  private Properties setEvalProperties(final String lang, final String normalize, final String untokenizable, final String inputFormat, final String segmentOnLinebreak, final String reference) {
+  private Properties setEvalProperties(final String lang, final String normalize, final String untokenizable, final String inputFormat, final String segmentOnLinebreak, final String reference, final String verbose) {
 	    final Properties evalProperties = new Properties();
 	    evalProperties.setProperty("language", lang);
 	    evalProperties.setProperty("normalize", normalize);
@@ -521,10 +544,11 @@ public class CLI {
 	    evalProperties.setProperty("untokenizable", untokenizable);
 	    evalProperties.setProperty("inputFormat", inputFormat);
 	    evalProperties.setProperty("segmentOnLinebreak", segmentOnLinebreak);
+	    evalProperties.setProperty("verbose", verbose);
 	    return evalProperties;
 	  }
     
-    private Properties setServerProperties(final String port, final String lang, final String normalize, final String untokenizable, final String kafversion, final String inputkaf, final String notok, final String outputFormat, final String offsets, final String segmentOnLinebreak) {
+    private Properties setServerProperties(final String port, final String lang, final String normalize, final String untokenizable, final String kafversion, final String inputkaf, final String notok, final String outputFormat, final String offsets, final String segmentOnLinebreak, final String verbose) {
       final Properties serverProperties = new Properties();
       serverProperties.setProperty("port", port);
       serverProperties.setProperty("language", lang);
@@ -536,6 +560,7 @@ public class CLI {
       serverProperties.setProperty("outputFormat", outputFormat);
       serverProperties.setProperty("offsets", offsets);
       serverProperties.setProperty("segmentOnLinebreak", segmentOnLinebreak);
+      serverProperties.setProperty("verbose", verbose);
       return serverProperties;
   }
      /**

@@ -182,6 +182,7 @@ public class RuleBasedTokenizer implements Tokenizer {
   private final String lang;
   private final String originalText;
   private boolean unTokenizable;
+  //private final String verbose;
 
   /**
    * Construct a rule based tokenizer.
@@ -198,6 +199,7 @@ public class RuleBasedTokenizer implements Tokenizer {
     tokenFactory = new TokenFactory();
     // TODO improve this
     originalText = RuleBasedSegmenter.buildText(text, properties.getProperty("segmentOnLinebreak"));
+    //verbose = properties.getProperty("verbose");
   }
 
   /*
@@ -243,7 +245,7 @@ public class RuleBasedTokenizer implements Tokenizer {
     final long duration = System.nanoTime() - start;
     final double toksPerSecond = noTokens / (duration / 1000000000.0);
     System.err.printf(
-        "ixa-pipe-tok tokenized %d tokens at %.2f tokens per second.%n",
+        "ixa-pipe-tok tokenized %d tokens at %.2f tokens per second.%n%n",
         noTokens, toksPerSecond);
     return result;
   }

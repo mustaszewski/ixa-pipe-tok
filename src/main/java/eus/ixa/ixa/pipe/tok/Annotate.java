@@ -58,6 +58,7 @@ public class Annotate {
    * The sentence splitter.
    */
   private final RuleBasedSegmenter segmenter;
+  private final String verbose;
 
   public Annotate(final BufferedReader breader, final Properties properties) {
     //System.err.println("-> TEXT START!!");
@@ -66,6 +67,7 @@ public class Annotate {
     segmenter = new RuleBasedSegmenter(text, properties);
     //System.err.println("-> SEGMENTER UP!!");
     toker = new RuleBasedTokenizer(text, properties);
+    verbose = properties.getProperty("verbose");
     //System.err.println("-> TOKENIZER UP!!");
   }
 
@@ -156,11 +158,14 @@ public class Annotate {
   public String tokenizeToText() {
 
     final StringBuilder sb = new StringBuilder();
-    System.err.println("-> Segmenting.....");
+    if (verbose.equalsIgnoreCase("yes")) {
+    	System.err.println("-> Segmenting.....");
+    }
     final String[] sentences = segmenter.segmentSentence();
-    System.err.println("-> Tokenizing.....");
+    if (verbose.equalsIgnoreCase("yes")) {
+    	System.err.println("-> Tokenizing.....");
+    }
     final List<List<Token>> tokens = toker.tokenize(sentences);
-    System.err.println("-> [DONE]!");
     for (final List<Token> tokSentence : tokens) {
       for (final Token token : tokSentence) {
         String tokenValue = token.getTokenValue();
